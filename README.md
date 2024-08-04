@@ -1,0 +1,1 @@
+# Corteos.Test.CurrenciesRateWorker

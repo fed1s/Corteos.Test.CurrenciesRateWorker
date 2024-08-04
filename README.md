@@ -10,3 +10,15 @@
 Приложение и БД могут быть развёрнуты в Docker-контейнерах через docker compose, с автоматическим рестартом.
 
 Приложение работает как Worker-сервис. Ежедневное выполнение задачи по расписанию реализовано при помощи Job Scheduling пакета Quartz.NET.
+
+Схема БД
+![СхемаБД](https://github.com/user-attachments/assets/c9a8e6e0-0f26-4568-8a3d-8b7818d8c6ec)
+
+
+Таблица курсов валют
+![Таблица курсов валют](https://github.com/user-attachments/assets/59cd7041-f71f-4b9e-aa09-3a1fb061bdf0)
+
+
+Таблица справочника валют
+![Таблица справочника валют](https://github.com/user-attachments/assets/be3bb090-3e15-4f22-987f-ef0fc92827be)
+

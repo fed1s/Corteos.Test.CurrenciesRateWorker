@@ -1,0 +1,18 @@
+version: '3.5'
+services:
+  postgresql:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=12345
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+
+  currenciesrateworker:
+    build: .
+    image: currenciesrateworker
+    environment:
+      ConnectionStrings__CurrencyDbContext: Username=postgres;Password=12345;Host=postgresql;Port=5432;Database=dbcurrency
+    depends_on:
+      - postgresql
+    restart: unless-stopped

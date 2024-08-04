@@ -1,4 +1,4 @@
-﻿namespace Corteos.Test.CurrenciesRateWorker.Models
+namespace Corteos.Test.CurrenciesRateWorker.Models
 {
     public class CurrencyRateEntity
     {

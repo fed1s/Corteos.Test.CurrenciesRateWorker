@@ -41,7 +41,7 @@ namespace Corteos.Test.CurrenciesRateWorker
 
             var host = builder.Build();
             
-            //Применение миграций
+            //РџСЂРёРјРµРЅРµРЅРёРµ РјРёРіСЂР°С†РёР№
             using var scope = host.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<CurrencyDbContext>().Database.Migrate();
             

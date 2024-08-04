@@ -1,4 +1,4 @@
-﻿using Corteos.Test.CurrenciesRateWorker.Models;
+using Corteos.Test.CurrenciesRateWorker.Models;
 using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Quartz;
 using System.Globalization;

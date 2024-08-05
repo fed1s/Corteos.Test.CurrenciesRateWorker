@@ -1,4 +1,5 @@
 using Corteos.Test.CurrenciesRateWorker.Models;
+using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories;
 using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Quartz;
 using System.Text;
@@ -10,9 +11,9 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
     public class SetCurrenciesLibJob : IJob
     {
         private readonly ILogger<SetCurrenciesLibJob> _logger;
-        private readonly ICurrenciesRepository _currenciesRepository;
+        private readonly CurrenciesLibRepository _currenciesRepository;
 
-        public SetCurrenciesLibJob(ILogger<SetCurrenciesLibJob> logger, ICurrenciesRepository currenciesRepository)
+        public SetCurrenciesLibJob(ILogger<SetCurrenciesLibJob> logger, CurrenciesLibRepository currenciesRepository)
         {
             _logger = logger;
             _currenciesRepository = currenciesRepository;
@@ -21,6 +22,42 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
         public async Task Execute(IJobExecutionContext context)
         {
             _logger.LogInformation("Inspect currency lib");
+
+
+            /////test
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var xmlLib = XDocument.Load("https://cbr.ru/scripts/XML_valFull.asp");
+
+            var listLib = xmlLib.Root
+                    .Elements("Item")
+                    .Where(i => i.Elements().All(el => el.Value != ""))
+                    .Select(ce => new CurrencyEntity
+                    {
+                        ISONumCodeId = int.Parse(ce.Element("ISO_Num_Code")?.Value),
+                        ISOCharCode = ce.Element("ISO_Char_Code")?.Value,
+                        CurrencyName = ce.Element("Name")?.Value,
+                        CurrencyEngName = ce.Element("EngName")?.Value
+                    });
+
+
+
+            bool b = _currenciesRepository.IsCurrenciesLibEmptyOrChange(listLib);
+
+            if (b)
+            {
+                
+            }
+
+
+
+            bool c = b;
+
+
+
+
+
+
+
 
             //Допускаем, что библиотека валют ЦБ стабильна. Грузится в БД единожды.
             if (_currenciesRepository.IsCurrenciesLibEmpty())
@@ -43,7 +80,7 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
 
                 //В словаре валют присутствуют валюты без значений у элементов, фильтрация where их исключает
                 //Валюты без кодов валют: Литовский талон, Item ID="R01436"; Украинский карбованец, Item ID="R01720A"
-                var list = xml.Root?
+                var list = xml.Root
                     .Elements("Item")
                     .Where(i => i.Elements().All(el => el.Value != ""))
                     .Select(ce => new CurrencyEntity
@@ -52,8 +89,8 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
                         ISOCharCode = ce.Element("ISO_Char_Code")?.Value,
                         CurrencyName = ce.Element("Name")?.Value,
                         CurrencyEngName = ce.Element("EngName")?.Value
-                    })
-                    .ToList();
+                    });
+                    //.ToList();
 
                 await _currenciesRepository.AddCurrenciesLib(list);
 

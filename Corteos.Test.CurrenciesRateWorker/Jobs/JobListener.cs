@@ -63,8 +63,13 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
                     //вступают в силу на следующий календарный день после дня установления.
                     var trigger = TriggerBuilder.Create()
                         .WithIdentity(setCurrRateJobKey.Name + " trigger")
-                        .WithCronSchedule("0 01 18 * * ?", x => x                                       //Ежедневное выполнение в 18-01
-                            .InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
+
+                        //.WithCronSchedule("0 01 18 * * ?", x => x                                       //Ежедневное выполнение в 18-01
+                        //    .InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
+                        .WithSimpleSchedule(x => x              // настраиваем выполнение действия
+                            .WithIntervalInMinutes(1)           // через 1 минуту
+                            .RepeatForever())                   // бесконечное повторение
+                        .StartNow()
                         .Build();
 
                     context.Scheduler.ScheduleJob(job, trigger, cancellationToken);

@@ -14,17 +14,19 @@ namespace Corteos.Test.CurrenciesRateWorker
         {
             var builder = Host.CreateApplicationBuilder(args);
 
-            builder.Services.AddScoped<ICurrenciesRepository, CurrenciesRepository>();
-            builder.Services.AddScoped<ICurrenciesRateRepository, CurrenciesRateRepository>();
+            builder.Services.AddScoped<CurrenciesLibRepository>();
+            builder.Services.AddScoped<CurrenciesRateRepository>();
 
             builder.Services.AddDbContext<CurrencyDbContext>();
 
             builder.Services.AddQuartz(q =>
             {
-                q.AddJobListener<JobListener>();
+                //q.AddJobListener<JobListener>();
 
-                var updCurrLibJobKey = new JobKey("Set currencies lib");
-                q.AddJob<SetCurrenciesLibJob>(opts => opts
+                var updCurrLibJobKey = new JobKey("Set currencies");
+                //var updCurrLibJobKey = new JobKey("Set currencies lib");
+                q.AddJob<SetCurrenciesJob>(opts => opts
+                //q.AddJob<SetCurrenciesLibJob>(opts => opts
                     .WithIdentity(updCurrLibJobKey));
 
                 q.AddTrigger(opts => opts

@@ -1,4 +1,5 @@
 using Corteos.Test.CurrenciesRateWorker.Models;
+using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories;
 using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Quartz;
 using System.Globalization;
@@ -11,9 +12,9 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
     public class SetCurrenciesRetroRateJob : IJob
     {
         private readonly ILogger<SetCurrenciesRetroRateJob> _logger;
-        private readonly ICurrenciesRateRepository _currenciesRateRepository;
+        private readonly CurrenciesRateRepository _currenciesRateRepository;
 
-        public SetCurrenciesRetroRateJob(ILogger<SetCurrenciesRetroRateJob> logger, ICurrenciesRateRepository currenciesRateRepository)
+        public SetCurrenciesRetroRateJob(ILogger<SetCurrenciesRetroRateJob> logger, CurrenciesRateRepository currenciesRateRepository)
         {
             _logger = logger;
             _currenciesRateRepository = currenciesRateRepository;
@@ -36,39 +37,35 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
                 DateOnly reqDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(3));
 
                 //Данные за последние 30 дней, при необходимости можно задать не хардкодом, а например из конфигов
-                int days = 30;
+                DateOnly retroDate = reqDate.AddDays(-30);
 
                 List<CurrencyRateEntity> currencyRateEntities = new List<CurrencyRateEntity>();
 
                 try
                 {
-                    do
+                    while (reqDate > retroDate)
                     {
                         xml = XDocument.Load("https://cbr.ru/scripts/XML_daily.asp?date_req=" + reqDate.ToString("dd\\/MM\\/yyyy"));
 
-                        if (string.Compare(reqDate.ToString("dd.MM.yyyy"), xml.Root?.Attribute("Date").Value) != 0)
+                        if (string.Compare(reqDate.ToString("dd.MM.yyyy"), xml.Root.Attribute("Date").Value) != 0)
                         {
-                            days--;
                             reqDate = reqDate.AddDays(-1);
                             continue;
                         }
 
-                        var list = xml.Root?
+                        var list = xml.Root
                             .Elements("Valute")
                             .Select(cre => new CurrencyRateEntity
                             {
-                                CurrencyRateDate = DateOnly.ParseExact(xml.Root?.Attribute("Date").Value, "dd.MM.yyyy"),
-                                Nominal = int.Parse(cre.Element("Nominal")?.Value),
-                                Value = decimal.Parse(cre.Element("Value")?.Value),
-                                NumCodeId = int.Parse(cre.Element("NumCode")?.Value)
-                            })
-                            .ToList();
+                                CurrencyRateDate = DateOnly.ParseExact(xml.Root.Attribute("Date").Value, "dd.MM.yyyy"),
+                                Nominal = int.Parse(cre.Element("Nominal").Value),
+                                Value = decimal.Parse(cre.Element("Value").Value),
+                                NumCodeId = int.Parse(cre.Element("NumCode").Value)
+                            });
 
                         currencyRateEntities.AddRange(list);
-
-                        days--;
                         reqDate = reqDate.AddDays(-1);
-                    } while (days > 0);
+                    }
 
                     await _currenciesRateRepository.AddCurrenciesRate(currencyRateEntities);
                 }

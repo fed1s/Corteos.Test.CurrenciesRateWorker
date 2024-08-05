@@ -1,4 +1,5 @@
 using Corteos.Test.CurrenciesRateWorker.Models;
+using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories;
 using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Quartz;
 using System.Text;
@@ -10,9 +11,9 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
     public class SetCurrenciesRateJob : IJob
     {
         private readonly ILogger<SetCurrenciesRateJob> _logger;
-        private readonly ICurrenciesRateRepository _currenciesRateRepository;
+        private readonly CurrenciesRateRepository _currenciesRateRepository;
 
-        public SetCurrenciesRateJob(ILogger<SetCurrenciesRateJob> logger, ICurrenciesRateRepository currenciesRateRepository)
+        public SetCurrenciesRateJob(ILogger<SetCurrenciesRateJob> logger, CurrenciesRateRepository currenciesRateRepository)
         {
             _logger = logger;
             _currenciesRateRepository = currenciesRateRepository;
@@ -32,25 +33,26 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
             }
             catch (Exception)
             {
-                _logger.LogInformation("Ошибка получения курсов валют");
+                _logger.LogError("Ошибка получения курсов валют");
                 throw;
             }
 
             //Проверяем актуальность данных. Если свежих нет - заливаем
-            if (!_currenciesRateRepository.IsCurrenciesRateActual(DateOnly.Parse(xml.Root?.Attribute("Date").Value)))
+            if (!_currenciesRateRepository.IsCurrenciesRateActual(DateOnly.Parse(xml.Root.Attribute("Date").Value)))
+            //if(true)
             {
                 _logger.LogInformation("Fetch currency rates");
 
-                var list = xml.Root?
+                var list = xml.Root
                     .Elements("Valute")
                     .Select(cre => new CurrencyRateEntity
                     {
-                        CurrencyRateDate = DateOnly.ParseExact(xml.Root?.Attribute("Date").Value, "dd.MM.yyyy"),
+                        CurrencyRateDate = DateOnly.ParseExact(xml.Root.Attribute("Date").Value, "dd.MM.yyyy"),
                         Nominal = int.Parse(cre.Element("Nominal")?.Value),
                         Value = decimal.Parse(cre.Element("Value")?.Value),
                         NumCodeId = int.Parse(cre.Element("NumCode")?.Value)
-                    })
-                    .ToList();
+                    });
+                    //.ToList();
 
                 await _currenciesRateRepository.AddCurrenciesRate(list);
 

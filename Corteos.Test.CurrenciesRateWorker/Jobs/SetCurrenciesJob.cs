@@ -48,11 +48,9 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
         private async Task CheckAndSetCurrenciesLibAsync(XDocument xml)
         {
             _logger.LogInformation("Проверка библиотеки валют");
-            
-            //В словаре валют присутствуют валюты без значений у элементов, фильтрация where их исключает
-            //Валюты без кодов валют: Литовский талон, Item ID="R01436"; Украинский карбованец, Item ID="R01720A"
-            var list = xml.Root
-                .Elements("Item")
+
+            var list = xml.Root                                                     //В словаре валют присутствуют валюты без значений у элементов, фильтрация where их исключает
+                .Elements("Item")                                                   //Валюты без кодов валют: Литовский талон, Item ID="R01436"; Украинский карбованец, Item ID="R01720A"
                 .Where(i => i.Elements().All(el => el.Value != ""))
                 .Select(ce => new CurrencyEntity
                 {

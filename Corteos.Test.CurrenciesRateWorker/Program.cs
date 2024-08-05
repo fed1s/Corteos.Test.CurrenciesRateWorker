@@ -1,7 +1,6 @@
 using Corteos.Test.CurrenciesRateWorker.Jobs;
 using Corteos.Test.CurrenciesRateWorker.Persistence;
 using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories;
-using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Quartz.AspNetCore;
@@ -21,17 +20,15 @@ namespace Corteos.Test.CurrenciesRateWorker
 
             builder.Services.AddQuartz(q =>
             {
-                //q.AddJobListener<JobListener>();
+                q.AddJobListener<JobListener>();
 
-                var updCurrLibJobKey = new JobKey("Set currencies");
-                //var updCurrLibJobKey = new JobKey("Set currencies lib");
+                var startAppJobKey = new JobKey("Start app");
                 q.AddJob<SetCurrenciesJob>(opts => opts
-                //q.AddJob<SetCurrenciesLibJob>(opts => opts
-                    .WithIdentity(updCurrLibJobKey));
+                    .WithIdentity(startAppJobKey));
 
                 q.AddTrigger(opts => opts
-                    .ForJob(updCurrLibJobKey)
-                    .WithIdentity(updCurrLibJobKey.Name + " trigger")
+                    .ForJob(startAppJobKey)
+                    .WithIdentity(startAppJobKey.Name + " trigger")
                     .StartNow()
                 );
             });

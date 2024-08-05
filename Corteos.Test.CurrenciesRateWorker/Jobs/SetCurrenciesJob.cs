@@ -1,12 +1,7 @@
 ﻿using Corteos.Test.CurrenciesRateWorker.Models;
 using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories;
-using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Quartz;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace Corteos.Test.CurrenciesRateWorker.Jobs
@@ -31,35 +26,26 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);          //Корректная обработка кодировки encoding="windows-1251" у возвращаемого XML документа
             XDocument xmlLib = TryGetCurrenciesLibXml();
             XDocument xmlRate = TryGetCurrenciesRateXml();
-            DateOnly actualRateDate = DateOnly.Parse(xmlRate.Root.Attribute("Date").Value);
 
-            
-            await CheckCurrenciesLibAsync(xmlLib);                                  //Проверяем наличие/изменение библиотеки валют
+            await CheckAndSetCurrenciesLibAsync(xmlLib);                            //Проверяем наличие/изменение библиотеки валют
 
             if (_currenciesRateRepository.IsCurrenciesRateEmpty())                  //Проверяем наличие курсов валют (первый запуск)
             {
-                await SetCurrenciesRetroRateAsync(30);
+                await SetCurrenciesRetroRateAsync(30);                              //Получение исторических данных о курсах, за 30 дней
             }
 
-
-            _logger.LogInformation("Проверяем актуальность данных курсов валют");
-
-            if (!_currenciesRateRepository.IsCurrenciesRateActual(actualRateDate))  //Проверяем актуальность данных. Если свежих нет - заливаем
-            {
-                await SetCurrenciesRateAsync(xmlRate);
-            }
-            else
-            {
-                _logger.LogInformation("Курсы валют актуальны");
-            }
+             await CheckAndSetCurrenciesRateAsync(xmlRate);                         //Проверяем актуальность данных. Если свежих нет, или неполные - заливаем
         }
 
 
-
-        //Methods
-        //привести к нормальному виду комментария
-
-        private async Task CheckCurrenciesLibAsync(XDocument xml)
+        #region SetCurrencies Methods
+        /// <summary>
+        /// Проверка наличия и актуальности данных библиотеки валют в БД.
+        /// Если библиотека отсутствует или неполная, её данные будут обновлены.
+        /// </summary>
+        /// <param name="xml">XML документ с библиотекой валют.</param>
+        /// <returns></returns>
+        private async Task CheckAndSetCurrenciesLibAsync(XDocument xml)
         {
             _logger.LogInformation("Проверка библиотеки валют");
             
@@ -78,7 +64,7 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
 
             if (_currenciesRepository.IsCurrenciesLibEmptyOrChange(list))
             {
-                _logger.LogInformation("Получаем библиотеку валют");
+                _logger.LogInformation("Библиотека валют отсутствует или неактуальна. Получаем библиотеку валют");
 
                 await _currenciesRepository.AddCurrenciesLib(list);
                 
@@ -87,10 +73,14 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
             _logger.LogInformation("Библиотека валют актуальна");
         }
 
-
+        /// <summary>
+        /// Загрузка в БД исторических данных курсов валют за период в днях.
+        /// </summary>
+        /// <param name="days">Количество предыдущих дней (включая текущий), за которые необходимы данные.</param>
+        /// <returns></returns>
         private async Task SetCurrenciesRetroRateAsync(int days)
         {
-            _logger.LogInformation("Получаем исторические данные курсов валют");
+            _logger.LogInformation("Данные о курсах валют отсутствуют. Получаем исторические данные курсов валют");
 
             List<CurrencyRateEntity> currencyRateEntities = [];
 
@@ -127,9 +117,14 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
         }
 
 
-        private async Task SetCurrenciesRateAsync(XDocument xml)
+        /// <summary>
+        /// Проверка и получение актуальных данных курсов валют.
+        /// </summary>
+        /// <param name="xml">XDocument с курсами валют.</param>
+        /// <returns></returns>
+        private async Task CheckAndSetCurrenciesRateAsync(XDocument xml)
         {
-            _logger.LogInformation("Получаем актуальные курсы валют");
+            _logger.LogInformation("Проверка актуальности курсов валют");
 
             var list = xml.Root
                     .Elements("Valute")
@@ -141,13 +136,25 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
                         NumCodeId = int.Parse(cre.Element("NumCode").Value)
                     });
 
-            await _currenciesRateRepository.AddCurrenciesRate(list);
-
-            _logger.LogInformation("Актуальные курсы валют получены");
+            if (!_currenciesRateRepository.IsCurrenciesRateActual(list))
+            {
+                _logger.LogInformation("Курсы валют неактуальны. Получение свежих данных");
+                await _currenciesRateRepository.AddCurrenciesRate(list);
+                _logger.LogInformation("Актуальные курсы валют получены");
+            }
+            else
+            {
+                _logger.LogInformation("Курсы валют актуальны");
+            }
         }
+        #endregion SetCurrencies Methods
 
 
         #region GetXMLData Methods
+        /// <summary>
+        /// Получение библиотеки курсов валют с сайта ЦБ.
+        /// </summary>
+        /// <returns>XDocument с библиотекой валют.</returns>
         private XDocument TryGetCurrenciesLibXml()
         {
             try
@@ -161,6 +168,10 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
             }
         }
 
+        /// <summary>
+        /// Получение курсов валют с сайта ЦБ.
+        /// </summary>
+        /// <returns>XDocument с курсами валют.</returns>
         private XDocument TryGetCurrenciesRateXml()
         {
             try
@@ -174,6 +185,11 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
             }
         }
 
+        /// <summary>
+        /// Получение курсов валют с сайта ЦБ.
+        /// </summary>
+        /// <param name="reqDate">Дата, на которую нужны данные курсов валют.</param>
+        /// <returns>XDocument с курсами валют.</returns>
         private XDocument TryGetCurrenciesRateXml(DateOnly reqDate)
         {
             try

@@ -1,11 +1,9 @@
 ﻿using Corteos.Test.CurrenciesRateWorker.Models;
-using Corteos.Test.CurrenciesRateWorker.Persistence.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace Corteos.Test.CurrenciesRateWorker.Persistence.Repositories
 {
-    public class CurrenciesRateRepository //: ICurrenciesRateRepository
+    public class CurrenciesRateRepository
     {
         private readonly CurrencyDbContext _dbContext;
 
@@ -14,6 +12,11 @@ namespace Corteos.Test.CurrenciesRateWorker.Persistence.Repositories
             _dbContext = dbContext;
         }
 
+        /// <summary>
+        /// Добавить в БД коллекцию уникальных данных о курсах валют.
+        /// </summary>
+        /// <param name="entities">Коллекция курсов валют.</param>
+        /// <returns></returns>
         public async Task AddCurrenciesRate(IEnumerable<CurrencyRateEntity> entities)
         {
             _dbContext.CurrenciesRate.AddRange(entities
@@ -24,14 +27,23 @@ namespace Corteos.Test.CurrenciesRateWorker.Persistence.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Проверка наличия любых данных о курсах валют в БД.
+        /// </summary>
+        /// <returns>true, если данные в БД отсутствуют.</returns>
         public bool IsCurrenciesRateEmpty()
         {
             return !_dbContext.CurrenciesRate.AsNoTracking().Any();
         }
 
-        public bool IsCurrenciesRateActual(DateOnly reqDate)
+        /// <summary>
+        /// Проверка актуальности данных о курсах валют в БД.
+        /// </summary>
+        /// <param name="entities">Коллекция данных о курсах валют.</param>
+        /// <returns>false, если данные о курсах валют неполные.</returns>
+        public bool IsCurrenciesRateActual(IEnumerable<CurrencyRateEntity> entities)
         {
-            return _dbContext.CurrenciesRate.AsNoTracking().Any(e => e.CurrencyRateDate == reqDate);
+            return entities.All(e => _dbContext.CurrenciesRate.AsNoTracking().Contains(e));
         }
     }
 }

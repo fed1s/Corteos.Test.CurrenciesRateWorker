@@ -74,7 +74,7 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
         /// <summary>
         /// Загрузка в БД исторических данных курсов валют за период в днях.
         /// </summary>
-        /// <param name="days">Количество предыдущих дней (включая текущий), за которые необходимы данные.</param>
+        /// <param name="days">Количество дней, за которые необходимы исторические данные.</param>
         /// <returns></returns>
         private async Task SetCurrenciesRetroRateAsync(int days)
         {
@@ -114,7 +114,6 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
             _logger.LogInformation("Исторические данные курсов валют получены");
         }
 
-
         /// <summary>
         /// Проверка и получение актуальных данных курсов валют.
         /// </summary>
@@ -136,7 +135,7 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
 
             if (!_currenciesRateRepository.IsCurrenciesRateActual(list))
             {
-                _logger.LogInformation("Курсы валют неактуальны. Получение свежих данных");
+                _logger.LogInformation("Курсы валют неактуальны. Получение актуальных данных");
                 await _currenciesRateRepository.AddCurrenciesRate(list);
                 _logger.LogInformation("Актуальные курсы валют получены");
             }

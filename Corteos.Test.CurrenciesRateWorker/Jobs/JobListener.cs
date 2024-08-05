@@ -25,7 +25,7 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
 
         public override Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation(context.JobDetail.Key.Name + " job was executed.");
+            _logger.LogInformation(context.JobDetail.Key.Name + " job выполнена");
 
             if (jobException == null)
             {
@@ -37,12 +37,6 @@ namespace Corteos.Test.CurrenciesRateWorker.Jobs
                             .WithIdentity(setCurrenciesRateJobKey)
                             .Build();
 
-                    //CRON триггер установлен на ежедневное выполнение в 18:01мск, в т.ч. в нерабочие и праздничные дни
-                    //Исходя из информации в faq https://www.cbr.ru/dkp/faq/
-                    //ЦБ РФ публикует курс валют на своем официальном сайте в сети Интернет до 18:00 по московскому времени, точное время не регламентировано.
-                    //Официальные курсы иностранных валют по отношению к рублю устанавливаются ежедневно
-                    //(за исключением нерабочих дней, являющихся выходными и (или) нерабочими праздничными днями),
-                    //вступают в силу на следующий календарный день после дня установления.
                     var trigger = TriggerBuilder.Create()
                         .WithIdentity(setCurrenciesRateJobKey.Name + " trigger")
                         .WithCronSchedule("0 01 18 * * ?", x => x                                       //Ежедневное выполнение в 18-01
